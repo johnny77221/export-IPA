@@ -234,11 +234,11 @@
         NSDictionary *parameters = @{};
         NSURL *filePath = [NSURL fileURLWithPath:exportPath];
 #pragma mark generate download link html
-        NSString *htmlDataString = [NSString stringWithFormat:@"<a href=\"itms-services://?action=download-manifest&url=%@\"><font size=\"10\">(Click this link on your device)<br>Install %@</font></a><hr>or<a href=\"%@\"><font size=\"10\">directly download ipa file</font></a>",[ipaFileStorage stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.plist",ipaFileName]],ipaFileName,[ipaFileStorage stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.ipa",ipaFileName]]];
+        NSString *htmlDataString = [NSString stringWithFormat:@"<a href=\"itms-services://?action=download-manifest&url=%@\"><font size=\"10\">(Click this link on your device)<br>Install %@</font></a><hr>or<a href=\"%@\"><font size=\"10\">directly download ipa file</font></a>",[ipaFileStorage stringByAppendingFormat:@"/%@.plist",ipaFileName],ipaFileName,[ipaFileStorage stringByAppendingFormat:@"/%@.ipa",ipaFileName]];
         
 #pragma mark generate download info plist
         NSString *infoDataString = [NSString stringWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"ipa" ofType:@"plist"] encoding:NSUTF8StringEncoding error:nil];
-        infoDataString = [infoDataString stringByReplacingOccurrencesOfString:@"__URL__" withString:[ipaFileStorage stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.ipa",ipaFileName]]];
+        infoDataString = [infoDataString stringByReplacingOccurrencesOfString:@"__URL__" withString:[ipaFileStorage stringByAppendingFormat:@"/%@.ipa",ipaFileName]];
         infoDataString = [infoDataString stringByReplacingOccurrencesOfString:@"__BID__" withString:@""];
         infoDataString = [infoDataString stringByReplacingOccurrencesOfString:@"__TITLE__" withString:ipaFileName];
 
@@ -267,7 +267,7 @@
                 return;
             }
             
-            [[NSAlert alertWithMessageText:@"Finished " defaultButton:@"Close" alternateButton:nil otherButton:nil informativeTextWithFormat:@"upload success"] runModal];
+            [[NSAlert alertWithMessageText:@"Finished " defaultButton:@"Close" alternateButton:nil otherButton:nil informativeTextWithFormat:@"upload success:\n%@",[ipaFileStorage stringByAppendingFormat:@"/%@.html",ipaFileName]] runModal];
             NSLog(@"Success: %@", responseObject);
         } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
             [exportButton setEnabled:YES];
