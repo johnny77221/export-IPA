@@ -225,6 +225,10 @@
         
         NSDictionary *otaSettings = [NSDictionary dictionaryWithContentsOfFile:[NSHomeDirectory() stringByAppendingPathComponent:@"server.plist"]];
         //    NSURL *serviceURL = [NSURL URLWithString:otaSettings[@"addr"]];
+        if (!otaSettings) {
+            [[NSAlert alertWithMessageText:@"Error" defaultButton:@"Close" alternateButton:nil otherButton:nil informativeTextWithFormat:@"upload failed:ota server config file not found"] runModal];
+            return;
+        }
         NSString *postURLString = otaSettings[@"api"];
         NSString *ipaFileStorage = otaSettings[@"storage"];
         
