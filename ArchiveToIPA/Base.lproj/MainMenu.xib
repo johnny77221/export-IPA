@@ -16,6 +16,7 @@
                 <outlet property="appImageView" destination="btN-Aw-1m5" id="PfV-ry-fdA"/>
                 <outlet property="appTextView" destination="9Sl-rg-8Db" id="sQ6-Sr-Wbv"/>
                 <outlet property="archiveBrowser" destination="q1I-ul-91W" id="Ct7-8l-9t0"/>
+                <outlet property="enableOTAButton" destination="bQn-xv-mKd" id="i9H-Ac-MCg"/>
                 <outlet property="exportButton" destination="jH5-54-du9" id="d92-yM-EIv"/>
                 <outlet property="exportTextView" destination="XAj-Db-reh" id="dZN-aT-Gwt"/>
                 <outlet property="window" destination="QvC-M9-y7g" id="gIp-Ho-8D9"/>
@@ -736,7 +737,7 @@
                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                             <subviews>
                                 <textView ambiguous="YES" editable="NO" importsGraphics="NO" findStyle="panel" allowsUndo="YES" usesRuler="YES" usesFontPanel="YES" verticallyResizable="YES" allowsNonContiguousLayout="YES" id="XAj-Db-reh">
-                                    <rect key="frame" x="0.0" y="0.0" width="223" height="133"/>
+                                    <rect key="frame" x="0.0" y="0.0" width="223" height="296"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                                     <size key="minSize" width="397" height="296"/>
@@ -766,6 +767,13 @@
                         <connections>
                             <action selector="exportAction:" target="Voe-Tx-rLC" id="OxM-l2-CGK"/>
                         </connections>
+                    </button>
+                    <button fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="bQn-xv-mKd">
+                        <rect key="frame" x="392" y="347" width="162" height="18"/>
+                        <buttonCell key="cell" type="check" title="OTA Distribution" bezelStyle="regularSquare" imagePosition="left" inset="2" id="Vec-Gk-38d">
+                            <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                            <font key="font" metaFont="system"/>
+                        </buttonCell>
                     </button>
                 </subviews>
             </view>

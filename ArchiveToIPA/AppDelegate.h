@@ -30,6 +30,13 @@
     NSMutableArray *provisionArray;
     NSMutableArray *matchedProvisionArray;
     IBOutlet NSButton *exportButton;
+    
+    NSString *exportPath;
+    NSString *exportBundleID;
+    NSString *exportBundleVersion;
+
+
+    IBOutlet NSButton *enableOTAButton;
 }
 
 @end

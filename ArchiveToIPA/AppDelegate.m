@@ -7,6 +7,7 @@
 //
 
 #import "AppDelegate.h"
+#import "AFNetworking.h"
 
 @interface AppDelegate ()
 
@@ -141,6 +142,7 @@
     }
     appImageView.image = maxResolutionImage;
     NSString *bundleIdentifier = [[selectedArchive objectForKey:@"ApplicationProperties"] objectForKey:@"CFBundleIdentifier"];
+    exportBundleID = bundleIdentifier;
 #pragma mark selected app archive, find appropriate provision profile
     NSArray *archiveIdentifierComponents = [bundleIdentifier componentsSeparatedByString:@"."];
 //    NSLog(@"bundle id:%@",bundleIdentifier);
@@ -184,9 +186,9 @@
     [outputFileFormatter setAMSymbol:@"AM"];
     [outputFileFormatter setPMSymbol:@"PM"];
 
-    NSString *downloadPath = [[NSHomeDirectory() stringByAppendingPathComponent:@"Downloads"] stringByAppendingPathComponent:[NSString stringWithFormat:@"%@%@.ipa",[selectedArchive objectForKey:@"Name"],[outputFileFormatter stringFromDate:[NSDate date]]]];
-    NSLog(@"==\n archive %@ with %@ output to %@",selectedArchivePath, selectedProvisionName,downloadPath);
-    NSString *commandLine = [NSString stringWithFormat:@"xcodebuild -exportArchive -archivePath \"%@\" -exportPath \"%@\" -exportFormat ipa -exportProvisioningProfile '%@'",selectedArchivePath,downloadPath, selectedProvisionName];
+    exportPath = [[NSHomeDirectory() stringByAppendingPathComponent:@"Downloads"] stringByAppendingPathComponent:[NSString stringWithFormat:@"%@%@.ipa",[selectedArchive objectForKey:@"Name"],[outputFileFormatter stringFromDate:[NSDate date]]]];
+    NSLog(@"==\n archive %@ with %@ output to %@",selectedArchivePath, selectedProvisionName,exportPath);
+    NSString *commandLine = [NSString stringWithFormat:@"xcodebuild -exportArchive -archivePath \"%@\" -exportPath \"%@\" -exportFormat ipa -exportProvisioningProfile '%@'",selectedArchivePath,exportPath, selectedProvisionName];
     
     [exportTextView setString:@""];
     [exportButton setEnabled:NO];
@@ -210,8 +212,76 @@
     NSString *wholeString = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
     [exportTextView setString:wholeString];
     [exportTextView scrollRangeToVisible:NSMakeRange(wholeString.length - 2, 1)];
-    [exportButton setEnabled:YES];
+    
+    if (enableOTAButton.state == NSOffState) {
+        [exportButton setEnabled:YES];
+    }
+    else {
+        if (![[NSFileManager defaultManager] fileExistsAtPath:exportPath]) {
+            [[NSAlert alertWithMessageText:@"Error" defaultButton:@"Close" alternateButton:nil otherButton:nil informativeTextWithFormat:@"upload failed:ipa file not found (maybe export failed)"] runModal];
+            return;
+        }
+#pragma mark upload to ota server
+        
+        NSDictionary *otaSettings = [NSDictionary dictionaryWithContentsOfFile:[NSHomeDirectory() stringByAppendingPathComponent:@"server.plist"]];
+        //    NSURL *serviceURL = [NSURL URLWithString:otaSettings[@"addr"]];
+        NSString *postURLString = otaSettings[@"api"];
+        NSString *ipaFileStorage = otaSettings[@"storage"];
+        
+        NSString *ipaFileName = [[exportPath lastPathComponent] stringByDeletingPathExtension];
+        
+        AFHTTPRequestOperationManager *manager = [AFHTTPRequestOperationManager manager];
+        NSDictionary *parameters = @{};
+        NSURL *filePath = [NSURL fileURLWithPath:exportPath];
+#pragma mark generate download link html
+        NSString *htmlDataString = [NSString stringWithFormat:@"<a href=\"itms-services://?action=download-manifest&url=%@\"><font size=\"10\">(Click this link on your device)<br>Install %@</font></a><hr>or<a href=\"%@\"><font size=\"10\">directly download ipa file</font></a>",[ipaFileStorage stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.plist",ipaFileName]],ipaFileName,[ipaFileStorage stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.ipa",ipaFileName]]];
+        
+#pragma mark generate download info plist
+        NSString *infoDataString = [NSString stringWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"ipa" ofType:@"plist"] encoding:NSUTF8StringEncoding error:nil];
+        infoDataString = [infoDataString stringByReplacingOccurrencesOfString:@"__URL__" withString:[ipaFileStorage stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.ipa",ipaFileName]]];
+        infoDataString = [infoDataString stringByReplacingOccurrencesOfString:@"__BID__" withString:@""];
+        infoDataString = [infoDataString stringByReplacingOccurrencesOfString:@"__TITLE__" withString:ipaFileName];
 
+#pragma mark generate NSMutableURLRequest with multipart post
+        NSError *serializationError = nil;
+        NSMutableURLRequest *request = [manager.requestSerializer multipartFormRequestWithMethod:@"POST" URLString:[[NSURL URLWithString:postURLString] absoluteString] parameters:parameters constructingBodyWithBlock:^(id<AFMultipartFormData> formData) {
+            [formData appendPartWithFileURL:filePath name:@"file" error:nil];
+            [formData appendPartWithFileData:[htmlDataString dataUsingEncoding:NSUTF8StringEncoding] name:@"html" fileName:[ipaFileName stringByAppendingPathExtension:@"html"] mimeType:@"text/html"];
+            [formData appendPartWithFileData:[infoDataString dataUsingEncoding:NSUTF8StringEncoding] name:@"plist" fileName:[ipaFileName stringByAppendingPathExtension:@"plist"] mimeType:@"application/xml"];
+
+        } error:&serializationError];
+        if (serializationError) {
+            [[NSAlert alertWithMessageText:@"Error" defaultButton:@"Close" alternateButton:nil otherButton:nil informativeTextWithFormat:@"upload failed:unable to upload file"] runModal];
+            return;
+        }
+        [request setValue:otaSettings[@"auth"] forHTTPHeaderField:@"Authorization"];
+        
+        AFHTTPRequestOperation *operation = [manager HTTPRequestOperationWithRequest:request success:^(AFHTTPRequestOperation *operation, NSArray * responseObject) {
+            [exportButton setEnabled:YES];
+            if (![responseObject isKindOfClass:[NSArray class]]) {
+                [[NSAlert alertWithMessageText:@"Error" defaultButton:@"Close" alternateButton:nil otherButton:nil informativeTextWithFormat:@"upload failed: unexpected response"] runModal];
+                return ;
+            }
+            if ([responseObject count] != 3) {
+                [[NSAlert alertWithMessageText:@"Error" defaultButton:@"Close" alternateButton:nil otherButton:nil informativeTextWithFormat:@"upload failed: unexpected response array count"] runModal];
+                return;
+            }
+            
+            [[NSAlert alertWithMessageText:@"Finished " defaultButton:@"Close" alternateButton:nil otherButton:nil informativeTextWithFormat:@"upload success"] runModal];
+            NSLog(@"Success: %@", responseObject);
+        } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+            [exportButton setEnabled:YES];
+            [[NSAlert alertWithMessageText:@"Error" defaultButton:@"Close" alternateButton:nil otherButton:nil informativeTextWithFormat:@"upload failed:%@",error] runModal];
+            NSLog(@"Error: %@", error);
+        }];
+        
+        [manager.operationQueue addOperation:operation];
+#pragma mark end of upload to ota server
+
+    }
+    
+    
+    
 }
 
 #pragma mark provision profile reading
