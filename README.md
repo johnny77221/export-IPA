@@ -9,3 +9,4 @@ so I did this archive browser and provision browser for my self
 Thanks for Joshua's post saved lots of time reading mobileprovision files:
 http://stackoverflow.com/a/19311285
 
+please copy and place the server.plist settings file on the user directory of your computer, which will be reachable via NSHomeDirectory
