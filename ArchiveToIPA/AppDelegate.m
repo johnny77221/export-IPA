@@ -219,6 +219,7 @@
     else {
         if (![[NSFileManager defaultManager] fileExistsAtPath:exportPath]) {
             [[NSAlert alertWithMessageText:@"Error" defaultButton:@"Close" alternateButton:nil otherButton:nil informativeTextWithFormat:@"upload failed:ipa file not found (maybe export failed)"] runModal];
+            [exportButton setEnabled:YES];
             return;
         }
 #pragma mark upload to ota server
@@ -227,6 +228,7 @@
         //    NSURL *serviceURL = [NSURL URLWithString:otaSettings[@"addr"]];
         if (!otaSettings) {
             [[NSAlert alertWithMessageText:@"Error" defaultButton:@"Close" alternateButton:nil otherButton:nil informativeTextWithFormat:@"upload failed:ota server config file not found"] runModal];
+            [exportButton setEnabled:YES];
             return;
         }
         NSString *postURLString = otaSettings[@"api"];
@@ -256,6 +258,7 @@
         } error:&serializationError];
         if (serializationError) {
             [[NSAlert alertWithMessageText:@"Error" defaultButton:@"Close" alternateButton:nil otherButton:nil informativeTextWithFormat:@"upload failed:unable to upload file"] runModal];
+            [exportButton setEnabled:YES];
             return;
         }
         [request setValue:otaSettings[@"auth"] forHTTPHeaderField:@"Authorization"];
