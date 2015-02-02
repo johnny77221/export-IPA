@@ -43,7 +43,9 @@
             NSURL *infoPListFileURL = [xcodeArchiveURL URLByAppendingPathComponent:@"Info.plist"];
             NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithContentsOfURL:infoPListFileURL];
             [dict setObject:infoPListFileURL forKey:@"PListURL"];
-            [dataArray addObject:dict];
+            if (dict) {
+                [dataArray addObject:dict];
+            }
 //            [archiveInfoFileArray addObject:infoPListFileURL];
         }
     }
