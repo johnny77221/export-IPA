@@ -247,7 +247,7 @@
 #pragma mark generate download info plist
         NSString *infoDataString = [NSString stringWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"ipa" ofType:@"plist"] encoding:NSUTF8StringEncoding error:nil];
         infoDataString = [infoDataString stringByReplacingOccurrencesOfString:@"__URL__" withString:[ipaFileStorage stringByAppendingFormat:@"/%@.ipa",ipaFileName]];
-        infoDataString = [infoDataString stringByReplacingOccurrencesOfString:@"__BID__" withString:@""];
+        infoDataString = [infoDataString stringByReplacingOccurrencesOfString:@"__BID__" withString:exportBundleID];
         infoDataString = [infoDataString stringByReplacingOccurrencesOfString:@"__TITLE__" withString:ipaFileName];
 
 #pragma mark generate NSMutableURLRequest with multipart post
@@ -280,7 +280,7 @@
             NSLog(@"Success: %@", responseObject);
         } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
             [exportButton setEnabled:YES];
-            [[NSAlert alertWithMessageText:@"Error" defaultButton:@"Close" alternateButton:nil otherButton:nil informativeTextWithFormat:@"upload failed:%@",error] runModal];
+            [[NSAlert alertWithMessageText:@"Error" defaultButton:@"Close" alternateButton:nil otherButton:nil informativeTextWithFormat:@"upload failed"] runModal];
             NSLog(@"Error: %@", error);
         }];
         
