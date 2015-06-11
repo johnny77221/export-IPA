@@ -18,6 +18,12 @@
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
     // Insert code here to initialize your application
+    
+    NSURL *downloadFolder = [NSURL fileURLWithPath:[NSHomeDirectory() stringByAppendingPathComponent:@"Downloads"]];
+    if (downloadFolder) {
+        [crashFileControl setURL:downloadFolder];
+    }
+    
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(pipeCompleted:) name:NSFileHandleReadToEndOfFileCompletionNotification object:nil];
     [self refreshAction:nil];
 }
@@ -322,4 +328,68 @@
     return plist;
 }
 
+
+#pragma mark Symbolize crash file
+-(IBAction)symbolizeCrashFileAction:(id)sender
+{
+//    NSInteger selectedProfileIndex = [archiveBrowser selectedRowInColumn:2];
+//    if (selectedProfileIndex >= [matchedProvisionArray count]) {
+//        return;
+//    }
+    NSInteger selectedArchiveIndex = [archiveBrowser selectedRowInColumn:1];
+    if (selectedArchiveIndex >= [appDateArray count]) {
+        [[NSAlert alertWithMessageText:@"Error" defaultButton:@"Close" alternateButton:nil otherButton:nil informativeTextWithFormat:@"Please specify an archive"] runModal];
+        return;
+    }
+    NSDictionary *selectedArchive = [appDateArray objectAtIndex:selectedArchiveIndex];
+    
+    NSString *selectedArchivePath = [[[selectedArchive objectForKey:@"PListURL"] URLByDeletingLastPathComponent] path];
+
+    
+    
+    NSURL *url = [crashFileControl URL];
+    if (![[[[url lastPathComponent] pathExtension] lowercaseString] isEqualToString:@"crash"]) {
+        [[NSAlert alertWithMessageText:@"Error" defaultButton:@"Close" alternateButton:nil otherButton:nil informativeTextWithFormat:@"Please select a correct .crash file"] runModal];
+        return;
+    }
+    NSString *crashFilePath = [url path];
+    NSString *toolPath = @"/Applications/Xcode.app/Contents/SharedFrameworks/DTDeviceKitBase.framework/Versions/A/Resources/symbolicatecrash";
+    if (![[NSFileManager defaultManager] fileExistsAtPath:toolPath]) {
+        [[NSAlert alertWithMessageText:@"Error" defaultButton:@"Close" alternateButton:nil otherButton:nil informativeTextWithFormat:@"Symbolize tool not found, please install new version of XCode"] runModal];
+        return;
+    }
+    NSString *preCommand = @"export DEVELOPER_DIR=\"/Applications/XCode.app/Contents/Developer\"";
+    NSString *dsymPath = nil;
+    
+    NSString *dsymSearchPath = [selectedArchivePath stringByAppendingPathComponent:@"dSYMs"];
+    NSDirectoryEnumerator *enumerator = [[NSFileManager defaultManager] enumeratorAtPath:dsymSearchPath];
+    NSString *scanPath = nil;
+    while (scanPath = [enumerator nextObject]) {
+        if ([[[[scanPath lastPathComponent] pathExtension] lowercaseString] isEqualToString:@"dsym"]) {
+            dsymPath = [dsymSearchPath stringByAppendingPathComponent:scanPath];
+            break;
+        }
+    }
+    // find dsym file
+    
+    if (!dsymPath) {
+        [[NSAlert alertWithMessageText:@"Error" defaultButton:@"Close" alternateButton:nil otherButton:nil informativeTextWithFormat:@"Unable to find a dsym file in selected archive"] runModal];
+        return;
+    }
+    
+    
+    NSDateFormatter *outputFileFormatter = [[NSDateFormatter alloc] init];
+    [outputFileFormatter setDateFormat:@"MMddahhmm"];
+    [outputFileFormatter setAMSymbol:@"AM"];
+    [outputFileFormatter setPMSymbol:@"PM"];
+    
+    exportPath = [[NSHomeDirectory() stringByAppendingPathComponent:@"Downloads"] stringByAppendingPathComponent:[NSString stringWithFormat:@"crash_symbolized_%@_%@.crash",[selectedArchive objectForKey:@"Name"],[outputFileFormatter stringFromDate:[NSDate date]]]];
+    
+    NSString *commandLine = [preCommand stringByAppendingFormat:@"; %@ \"%@\" \"%@\" > \"%@\"; open %@",toolPath,crashFilePath,dsymPath,exportPath,exportPath];
+    NSTask *task = [[NSTask alloc] init];
+    [task setLaunchPath:@"/bin/sh"];
+    [task setArguments:@[ @"-c", commandLine ]];
+    [task launch];
+
+}
 @end

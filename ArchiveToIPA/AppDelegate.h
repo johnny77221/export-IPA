@@ -37,6 +37,10 @@
 
 
     IBOutlet NSButton *enableOTAButton;
+    
+    
+    IBOutlet NSPathControl *crashFileControl;
+
 }
 
 @end
