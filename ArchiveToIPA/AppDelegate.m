@@ -198,6 +198,11 @@
     NSLog(@"==\n archive %@ with %@ output to %@",selectedArchivePath, selectedProvisionName,exportPath);
     NSString *commandLine = [NSString stringWithFormat:@"xcodebuild -exportArchive -archivePath \"%@\" -exportPath \"%@\" -exportFormat ipa -exportProvisioningProfile '%@'",selectedArchivePath,exportPath, selectedProvisionName];
     
+    if (enterpriseButton.state != NSOffState) {
+        commandLine = [NSString stringWithFormat:@"xcrun -sdk iphoneos PackageApplication -v \"%@\" -o \"%@\"",[[selectedArchivePath stringByAppendingPathComponent:@"Products"] stringByAppendingPathComponent:selectedArchive[@"ApplicationProperties"][@"ApplicationPath"]],exportPath];
+    }
+    
+    
     [exportTextView setString:@""];
     [exportButton setEnabled:NO];
     
@@ -294,8 +299,6 @@
 #pragma mark end of upload to ota server
 
     }
-    
-    
     
 }
 
