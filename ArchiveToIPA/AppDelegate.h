@@ -42,6 +42,10 @@
     
     IBOutlet NSPathControl *crashFileControl;
 
+    NSString *archiveTeamID;
+    BOOL isDistribution;
+    NSString *archiveName;
+    NSString *archiveTime;
 }
 
 @end

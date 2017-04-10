@@ -83,7 +83,7 @@
         return [appDateArray count];
     }
     else if (column == 2) {
-        return [matchedProvisionArray count];
+        return 0;//[matchedProvisionArray count];
     }
     return 0;
 }
@@ -106,7 +106,7 @@
             text = [text stringByAppendingFormat:@" (%@)",[currentItem objectForKey:@"Comment"]];
         }
         [cell setTitle:text];
-        [cell setLeaf:NO];
+        [cell setLeaf:YES];
     }
     else if (column == 2) {
         NSDictionary *currentProvision = [matchedProvisionArray objectAtIndex:row];
@@ -151,6 +151,10 @@
     appImageView.image = maxResolutionImage;
     NSString *bundleIdentifier = [[selectedArchive objectForKey:@"ApplicationProperties"] objectForKey:@"CFBundleIdentifier"];
     exportBundleID = bundleIdentifier;
+    NSString *signingIdentity = [[selectedArchive objectForKey:@"ApplicationProperties"] objectForKey:@"SigningIdentity"];
+    NSArray *signingIdentityComponent = [signingIdentity componentsSeparatedByString:@"("];
+    archiveTeamID = [[[signingIdentityComponent lastObject] componentsSeparatedByString:@")"] firstObject];
+    isDistribution = [signingIdentity rangeOfString:@"Distribution"].length > 0;
 #pragma mark selected app archive, find appropriate provision profile
     NSArray *archiveIdentifierComponents = [bundleIdentifier componentsSeparatedByString:@"."];
 //    NSLog(@"bundle id:%@",bundleIdentifier);
@@ -179,29 +183,50 @@
 
 -(IBAction)exportAction:(id)sender
 {
+    /*
     NSInteger selectedProfileIndex = [archiveBrowser selectedRowInColumn:2];
     if (selectedProfileIndex >= [matchedProvisionArray count]) {
         return;
     }
+    */
     NSInteger selectedArchiveIndex = [archiveBrowser selectedRowInColumn:1];
     NSDictionary *selectedArchive = [appDateArray objectAtIndex:selectedArchiveIndex];
 
     NSString *selectedArchivePath = [[[selectedArchive objectForKey:@"PListURL"] URLByDeletingLastPathComponent] path];
-    NSString *selectedProvisionName = [[matchedProvisionArray objectAtIndex:selectedProfileIndex] objectForKey:@"Name"];
+//    NSString *selectedProvisionName = [[matchedProvisionArray objectAtIndex:selectedProfileIndex] objectForKey:@"Name"];
     
     NSDateFormatter *outputFileFormatter = [[NSDateFormatter alloc] init];
     [outputFileFormatter setDateFormat:@"MMddahhmm"];
     [outputFileFormatter setAMSymbol:@"AM"];
     [outputFileFormatter setPMSymbol:@"PM"];
 
-    exportPath = [[NSHomeDirectory() stringByAppendingPathComponent:@"Downloads"] stringByAppendingPathComponent:[NSString stringWithFormat:@"%@%@.ipa",[selectedArchive objectForKey:@"Name"],[outputFileFormatter stringFromDate:[NSDate date]]]];
-    NSLog(@"==\n archive %@ with %@ output to %@",selectedArchivePath, selectedProvisionName,exportPath);
-    NSString *commandLine = [NSString stringWithFormat:@"xcodebuild -exportArchive -archivePath \"%@\" -exportPath \"%@\" -exportFormat ipa -exportProvisioningProfile '%@'",selectedArchivePath,exportPath, selectedProvisionName];
+    archiveName = [selectedArchive objectForKey:@"Name"];
+    archiveTime = [outputFileFormatter stringFromDate:[NSDate date]];
+    exportPath = [NSHomeDirectory() stringByAppendingPathComponent:@"Downloads"];
     
+    NSString *plistTemplate = [NSString stringWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"export" ofType:@"plist"] encoding:NSUTF8StringEncoding error:nil];
+    plistTemplate = [plistTemplate stringByReplacingOccurrencesOfString:@"(teamid)" withString:archiveTeamID];
+    if(isDistribution) {
+        if (enterpriseButton.state != NSOffState) {
+            plistTemplate = [plistTemplate stringByReplacingOccurrencesOfString:@"(method)" withString:@"enterprise"];
+        }
+        else {
+            plistTemplate = [plistTemplate stringByReplacingOccurrencesOfString:@"(method)" withString:@"ad-hoc"];
+        }
+    }
+    else {
+        plistTemplate = [plistTemplate stringByReplacingOccurrencesOfString:@"(method)" withString:@"development"];
+    }
+    NSString *exportPlistPath = [[NSHomeDirectory() stringByAppendingPathComponent:@"Downloads"] stringByAppendingPathComponent:@"archiveipa.plist"];
+    [plistTemplate writeToFile:exportPlistPath atomically:YES encoding:NSUTF8StringEncoding error:nil];
+    
+    NSLog(@"==\n archive %@ output to %@",selectedArchivePath,exportPath);
+    NSString *commandLine = [NSString stringWithFormat:@"xcodebuild -exportArchive -archivePath \"%@\" -exportPath \"%@\" -exportOptionsPlist \"%@\"",selectedArchivePath,exportPath, exportPlistPath];
+    /*
     if (enterpriseButton.state != NSOffState) {
         commandLine = [NSString stringWithFormat:@"xcrun -sdk iphoneos PackageApplication -v \"%@\" -o \"%@\"",[[selectedArchivePath stringByAppendingPathComponent:@"Products"] stringByAppendingPathComponent:selectedArchive[@"ApplicationProperties"][@"ApplicationPath"]],exportPath];
     }
-    
+    */
     
     [exportTextView setString:@""];
     [exportButton setEnabled:NO];
@@ -211,6 +236,7 @@
     [task setArguments:@[ @"-c", commandLine ]];
     NSPipe *pipe = [[NSPipe alloc] init];
     [task setStandardOutput:pipe];
+    [task setStandardError:pipe];
     NSFileHandle *readingFileHandle = [pipe fileHandleForReading];
     [readingFileHandle readToEndOfFileInBackgroundAndNotify];
     
@@ -221,6 +247,11 @@
 
 -(void)pipeCompleted:(NSNotification *)notif
 {
+    // xcode 8.3: rename ipa file to correct name
+    NSString *moveTargetPath = [exportPath stringByAppendingPathComponent:[NSString stringWithFormat:@"%@%@.ipa",archiveName,archiveTime]];
+    [[NSFileManager defaultManager] moveItemAtPath:[exportPath stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.ipa",archiveName]] toPath:moveTargetPath error:nil];
+    exportPath = moveTargetPath;
+    
     NSData *data = [[notif userInfo] objectForKey:NSFileHandleNotificationDataItem];
     NSString *wholeString = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
     [exportTextView setString:wholeString];

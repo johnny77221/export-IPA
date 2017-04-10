@@ -22,6 +22,7 @@
 		03B32BF31A6CB7A6009F1E9C /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 03B32BF21A6CB7A6009F1E9C /* Images.xcassets */; };
 		03B32BF61A6CB7A6009F1E9C /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 03B32BF41A6CB7A6009F1E9C /* MainMenu.xib */; };
 		03B32C021A6CB7A6009F1E9C /* ArchiveToIPATests.m in Sources */ = {isa = PBXBuildFile; fileRef = 03B32C011A6CB7A6009F1E9C /* ArchiveToIPATests.m */; };
+		03C88FB81E9B733500440D38 /* export.plist in Resources */ = {isa = PBXBuildFile; fileRef = 03C88FB71E9B733500440D38 /* export.plist */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -65,6 +66,7 @@
 		03B32BFB1A6CB7A6009F1E9C /* ArchiveToIPATests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ArchiveToIPATests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		03B32C001A6CB7A6009F1E9C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		03B32C011A6CB7A6009F1E9C /* ArchiveToIPATests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ArchiveToIPATests.m; sourceTree = "<group>"; };
+		03C88FB71E9B733500440D38 /* export.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = export.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -132,6 +134,7 @@
 		03B32BEA1A6CB7A6009F1E9C /* ArchiveToIPA */ = {
 			isa = PBXGroup;
 			children = (
+				03C88FB71E9B733500440D38 /* export.plist */,
 				03B32BEF1A6CB7A6009F1E9C /* AppDelegate.h */,
 				03B32BF01A6CB7A6009F1E9C /* AppDelegate.m */,
 				031B57CF1A7A0F8B001FD7F3 /* ipa.plist */,
@@ -249,6 +252,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				03C88FB81E9B733500440D38 /* export.plist in Resources */,
 				031B57D11A7A0F8B001FD7F3 /* ipa.plist in Resources */,
 				03B32BF31A6CB7A6009F1E9C /* Images.xcassets in Resources */,
 				03B32BF61A6CB7A6009F1E9C /* MainMenu.xib in Resources */,
