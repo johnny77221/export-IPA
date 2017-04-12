@@ -279,9 +279,9 @@
         NSString *ipaFileStorage = otaSettings[@"storage"];
         
         NSString *ipaFileName = [[exportPath lastPathComponent] stringByDeletingPathExtension];
-        
-        AFHTTPRequestOperationManager *manager = [AFHTTPRequestOperationManager manager];
-        NSDictionary *parameters = @{};
+        AFHTTPSessionManager *manager = [AFHTTPSessionManager manager];
+//        AFHTTPRequestOperationManager *manager = [AFHTTPRequestOperationManager manager];
+//        NSDictionary *parameters = @{};
         NSURL *filePath = [NSURL fileURLWithPath:exportPath];
 #pragma mark generate download link html
         NSString *htmlDataString = [NSString stringWithFormat:@"<a href=\"itms-services://?action=download-manifest&url=%@\"><font size=\"10\">(Click this link on your device)<br>Install %@</font></a><hr>or<a href=\"%@\"><font size=\"10\">directly download ipa file</font></a>",[ipaFileStorage stringByAppendingFormat:@"/%@.plist",ipaFileName],ipaFileName,[ipaFileStorage stringByAppendingFormat:@"/%@.ipa",ipaFileName]];
@@ -293,11 +293,10 @@
         infoDataString = [infoDataString stringByReplacingOccurrencesOfString:@"__TITLE__" withString:ipaFileName];
 
 #pragma mark generate NSMutableURLRequest with multipart post
+        /*
         NSError *serializationError = nil;
         NSMutableURLRequest *request = [manager.requestSerializer multipartFormRequestWithMethod:@"POST" URLString:[[NSURL URLWithString:postURLString] absoluteString] parameters:parameters constructingBodyWithBlock:^(id<AFMultipartFormData> formData) {
-            [formData appendPartWithFileURL:filePath name:@"file" error:nil];
-            [formData appendPartWithFileData:[htmlDataString dataUsingEncoding:NSUTF8StringEncoding] name:@"html" fileName:[ipaFileName stringByAppendingPathExtension:@"html"] mimeType:@"text/html"];
-            [formData appendPartWithFileData:[infoDataString dataUsingEncoding:NSUTF8StringEncoding] name:@"plist" fileName:[ipaFileName stringByAppendingPathExtension:@"plist"] mimeType:@"application/xml"];
+           
 
         } error:&serializationError];
         if (serializationError) {
@@ -305,9 +304,15 @@
             [exportButton setEnabled:YES];
             return;
         }
-        [request setValue:otaSettings[@"auth"] forHTTPHeaderField:@"Authorization"];
-        
-        AFHTTPRequestOperation *operation = [manager HTTPRequestOperationWithRequest:request success:^(AFHTTPRequestOperation *operation, NSArray * responseObject) {
+         */
+//        [request setValue:otaSettings[@"auth"] forHTTPHeaderField:@"Authorization"];
+        manager.securityPolicy.allowInvalidCertificates = YES;
+        [manager.requestSerializer setValue:otaSettings[@"auth"] forHTTPHeaderField:@"Authorization"];
+        [manager POST:postURLString parameters:nil constructingBodyWithBlock:^(id<AFMultipartFormData>  _Nonnull formData) {
+            [formData appendPartWithFileURL:filePath name:@"file" error:nil];
+            [formData appendPartWithFileData:[htmlDataString dataUsingEncoding:NSUTF8StringEncoding] name:@"html" fileName:[ipaFileName stringByAppendingPathExtension:@"html"] mimeType:@"text/html"];
+            [formData appendPartWithFileData:[infoDataString dataUsingEncoding:NSUTF8StringEncoding] name:@"plist" fileName:[ipaFileName stringByAppendingPathExtension:@"plist"] mimeType:@"application/xml"];
+        } progress:nil success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
             [exportButton setEnabled:YES];
             if (![responseObject isKindOfClass:[NSArray class]]) {
                 [[NSAlert alertWithMessageText:@"Error" defaultButton:@"Close" alternateButton:nil otherButton:nil informativeTextWithFormat:@"upload failed: unexpected response"] runModal];
@@ -320,13 +325,19 @@
             
             [[NSAlert alertWithMessageText:@"Finished " defaultButton:@"Close" alternateButton:nil otherButton:nil informativeTextWithFormat:@"upload success:\n%@",[ipaFileStorage stringByAppendingFormat:@"/%@.html",ipaFileName]] runModal];
             NSLog(@"Success: %@", responseObject);
-        } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+        } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
             [exportButton setEnabled:YES];
             [[NSAlert alertWithMessageText:@"Error" defaultButton:@"Close" alternateButton:nil otherButton:nil informativeTextWithFormat:@"upload failed"] runModal];
             NSLog(@"Error: %@", error);
         }];
-        
-        [manager.operationQueue addOperation:operation];
+        /*
+        AFHTTPRequestOperation *operation = [manager HTTPRequestOperationWithRequest:request success:^(AFHTTPRequestOperation *operation, NSArray * responseObject) {
+            
+        } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+            
+        }];
+        */
+//        [manager.operationQueue addOperation:operation];
 #pragma mark end of upload to ota server
 
     }
